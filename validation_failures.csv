@@ -1,0 +1,7 @@
+table,field,issue
+profitandloss,"company_id,year",Duplicate records found
+balancesheet,"company_id,year",Duplicate records found
+cashflow,"company_id,year",Duplicate records found
+documents,"company_id,Year",Duplicate records found
+profitandloss,sales,Sales must be > 0
+cashflow,net_cash_flow,Cashflow mismatch
