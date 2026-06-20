@@ -22,3 +22,5 @@ files = [
 for file in files:
     df = load_excel(file)
     print(f"{file} loaded successfully. Rows: {len(df)}")
+
+    
