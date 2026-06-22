@@ -31,8 +31,11 @@ def main():
     conn = create_database()
 
     raw_path = Path("data/raw")
+    supporting_path = Path("data/supporting")
 
-    files = {
+    audit = []
+
+    raw_files = {
         "companies": "companies.xlsx",
         "profitandloss": "profitandloss.xlsx",
         "balancesheet": "balancesheet.xlsx",
@@ -42,7 +45,17 @@ def main():
         "prosandcons": "prosandcons.xlsx",
     }
 
-    for table_name, file_name in files.items():
+    supporting_files = {
+        "sectors": "sectors.xlsx",
+        "stock_prices": "stock_prices.xlsx",
+        "market_cap": "market_cap.xlsx",
+        "financial_ratios": "financial_ratios.xlsx",
+        "peer_groups": "peer_groups.xlsx",
+    }
+
+    # #LOADING RAW FILES
+
+    for table_name, file_name in raw_files.items():
 
         file_path = raw_path / file_name
 
@@ -73,12 +86,37 @@ def main():
             table_name
         )
 
+        audit.append({
+            "table": table_name,
+            "rows_in": len(df),
+            "rows_out": len(df),
+            "rejected": 0
+        })
+
+    #LOADING SUPPORTING FILES 
+
+    for table_name, file_name in supporting_files.items():
+        file_path = supporting_path / file_name
+        print(f"\nLoading {file_name}...")
+        df = pd.read_excel(file_path)
+        load_table(
+            conn,
+            df,
+            table_name
+        )
+        audit.append({
+            "table": table_name,
+            "rows_in": len(df),
+            "rows_out": len(df),
+            "rejected": 0
+        })
+    audit_df = pd.DataFrame(audit)
+    audit_df.to_csv("data/load_audit.csv", index=False)
+    print("\nGenerated load_audit.csv")
     conn.commit()
     conn.close()
-
     print("\nDatabase created successfully!")
     print(f"Database saved at: {DB_PATH}")
-
 
 if __name__ == "__main__":
     main()

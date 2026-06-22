@@ -88,3 +88,64 @@ CREATE TABLE prosandcons (
     cons TEXT
     
 );
+
+-- supporting file tables
+
+CREATE TABLE sectors (
+    id INTEGER PRIMARY KEY,
+    company_id TEXT,
+    broad_sector TEXT,
+    sub_sector TEXT,
+    index_weight_pct REAL,
+    market_cap_category TEXT
+);
+
+CREATE TABLE stock_prices (
+    id INTEGER PRIMARY KEY,
+    company_id TEXT,
+    date TEXT,
+    open_price REAL,
+    high_price REAL,
+    low_price REAL,
+    close_price REAL,
+    volume INTEGER,
+    adjusted_close REAL
+);
+
+CREATE TABLE market_cap (
+    id INTEGER PRIMARY KEY,
+    company_id TEXT,
+    year TEXT,
+    market_cap_crore REAL,
+    enterprise_value_crore REAL,
+    pe_ratio REAL,
+    pb_ratio REAL,
+    ev_ebitda REAL,
+    dividend_yield_pct REAL
+);
+
+CREATE TABLE financial_ratios (
+    id INTEGER PRIMARY KEY,
+    company_id TEXT,
+    year TEXT,
+    net_profit_margin_pct REAL,
+    operating_profit_margin_pct REAL,
+    return_on_equity_pct REAL,
+    debt_to_equity REAL,
+    interest_coverage REAL,
+    asset_turnover REAL,
+    free_cash_flow_cr REAL,
+    capex_cr REAL,
+    earnings_per_share REAL,
+    book_value_per_share REAL,
+    dividend_payout_ratio_pct REAL,
+    total_debt_cr REAL,
+    cash_from_operations_cr REAL
+);
+
+CREATE TABLE peer_groups (
+    id INTEGER PRIMARY KEY,
+    peer_group_name TEXT,
+    company_id TEXT,
+    is_benchmark INTEGER
+);
