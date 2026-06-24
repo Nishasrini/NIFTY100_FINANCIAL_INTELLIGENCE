@@ -24,6 +24,50 @@ def calculate_roce(operating_profit,depreciation,equity_capital,reserves,borrowi
         (ebit / capital_employed) * 100,
         2
     )
+def calculate_debt_to_equity(
+    borrowings,
+    equity_capital,
+    reserves,
+):
+    equity = equity_capital + reserves
+
+    if equity <= 0 or pd.isna(equity):
+        return None
+
+    return round(
+        borrowings / equity,
+        2,
+    )
+def calculate_interest_coverage(
+    operating_profit,
+    other_income,
+    interest,
+):
+    if pd.isna(interest):
+        return None
+
+    if interest == 0:
+        return 999
+
+    return round(
+        (
+            operating_profit
+            + other_income
+        )
+        / interest,
+        2,
+    )
+def calculate_asset_turnover(
+    sales,
+    total_assets,
+):
+    if total_assets == 0 or pd.isna(total_assets):
+        return None
+
+    return round(
+        sales / total_assets,
+        2,
+    )
 def build_profitability_ratios():
     conn = sqlite3.connect("data/nifty100.db")
     pl = pd.read_sql(
@@ -72,6 +116,30 @@ def build_profitability_ratios():
         ),
         axis=1
     )
+    df["debt_to_equity"] = df.apply(
+        lambda x: calculate_debt_to_equity(
+            x["borrowings"],
+            x["equity_capital"],
+            x["reserves"],
+        ),
+        axis=1,
+    )
+
+    df["interest_coverage"] = df.apply(
+        lambda x: calculate_interest_coverage(
+            x["operating_profit"],
+            x["other_income"],
+            x["interest"],
+        ),
+        axis=1,
+    )
+    df["asset_turnover"] = df.apply(
+        lambda x: calculate_asset_turnover(
+            x["sales"],
+            x["total_assets"],
+        ),
+        axis=1,
+    )
     # OPM Cross Validation
     df["opm_difference"] = (
         df["operating_profit_margin_pct"]
@@ -102,9 +170,13 @@ def build_profitability_ratios():
                 "operating_profit_margin_pct",
                 "return_on_equity_pct",
                 "return_on_capital_employed_pct",
+                "debt_to_equity",
+                "interest_coverage",
+                "asset_turnover",
             ]
         ].head()
     )
+
     conn.close()
     return df
 if __name__ == "__main__":
