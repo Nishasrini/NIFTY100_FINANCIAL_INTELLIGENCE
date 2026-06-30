@@ -124,23 +124,43 @@ CREATE TABLE market_cap (
     dividend_yield_pct REAL
 );
 
+DROP TABLE IF EXISTS financial_ratios;
+
 CREATE TABLE financial_ratios (
-    id INTEGER PRIMARY KEY,
+
     company_id TEXT,
     year TEXT,
+
     net_profit_margin_pct REAL,
     operating_profit_margin_pct REAL,
     return_on_equity_pct REAL,
+    return_on_capital_employed_pct REAL,
+
     debt_to_equity REAL,
     interest_coverage REAL,
     asset_turnover REAL,
+
+    sales_3yr_cagr REAL,
+    sales_5yr_cagr REAL,
+    sales_10yr_cagr REAL,
+
+    net_profit_3yr_cagr REAL,
+    net_profit_5yr_cagr REAL,
+    net_profit_10yr_cagr REAL,
+
+    eps_3yr_cagr REAL,
+    eps_5yr_cagr REAL,
+    eps_10yr_cagr REAL,
+
     free_cash_flow_cr REAL,
     capex_cr REAL,
-    earnings_per_share REAL,
-    book_value_per_share REAL,
-    dividend_payout_ratio_pct REAL,
-    total_debt_cr REAL,
-    cash_from_operations_cr REAL
+    cfo_quality_score REAL,
+    capex_intensity_pct REAL,
+    fcf_conversion_pct REAL,
+
+    capital_allocation_pattern TEXT,
+
+    PRIMARY KEY(company_id,year)
 );
 
 CREATE TABLE peer_groups (

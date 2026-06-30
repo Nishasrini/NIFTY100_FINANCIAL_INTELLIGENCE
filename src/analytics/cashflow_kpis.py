@@ -1,6 +1,8 @@
 import sqlite3
 import pandas as pd
 import numpy as np
+from ratios import build_profitability_ratios
+from cagr import generate_all_cagr
 DB_PATH = "data/nifty100.db"
 def capital_allocation_pattern(cfo, cfi, cff):
     if pd.isna(cfo) or pd.isna(cfi) or pd.isna(cff):
@@ -179,34 +181,143 @@ def save_to_database(df):
             index=False
         )
     conn.close()
+
 def main():
 
+    # Load cashflow data
     df = load_data()
 
+    # Calculate cashflow KPIs
     result = calculate_cashflow_metrics(df)
 
-    print("\nCash Flow KPI Sample\n")
+    ###################################################
+    # STEP 1 - Profitability Ratios
+    ###################################################
 
-    print(
-        result[
-            [
-                "company_id",
-                "year",
-                "free_cash_flow_cr",
-                "capex_cr",
-                "cfo_quality_score",
-                "cfo_quality_label",
-                "capex_intensity_pct",
-                "capex_category",
-                "fcf_conversion_pct",
-                "capital_allocation_pattern"
-            ]
-        ].head(20)
+    ratio_df = build_profitability_ratios()
+
+    ratio_df = ratio_df[
+        [
+            "company_id",
+            "year",
+            "net_profit_margin_pct",
+            "operating_profit_margin_pct",
+            "return_on_equity_pct",
+            "return_on_capital_employed_pct",
+            "debt_to_equity",
+            "interest_coverage",
+            "asset_turnover",
+        ]
+    ]
+
+    ###################################################
+    # STEP 2 - CAGR
+    ###################################################
+
+    conn = sqlite3.connect(DB_PATH)
+
+    pl = pd.read_sql(
+        """
+        SELECT
+            company_id,
+            year,
+            sales,
+            net_profit,
+            eps
+        FROM profitandloss
+        ORDER BY company_id, year
+        """,
+        conn
     )
 
-    save_to_database(result)
+    revenue, pat, eps = generate_all_cagr(pl)
 
-    print("\nCash Flow KPIs saved successfully.")
+    revenue = revenue.rename(columns={
+    "sales_3yr_cagr": "sales_3yr_cagr",
+    "sales_5yr_cagr": "sales_5yr_cagr",
+    "sales_10yr_cagr": "sales_10yr_cagr"
+    })
+
+    pat = pat.drop(columns=[
+    "net_profit_3yr_turnaround",
+    "net_profit_5yr_turnaround",
+    "net_profit_10yr_turnaround"
+    ], errors="ignore")
+
+    eps = eps.drop(columns=[
+    "eps_3yr_turnaround",
+    "eps_5yr_turnaround",
+    "eps_10yr_turnaround"
+    ], errors="ignore")
+
+    cagr = revenue.merge(
+    pat,
+    on=["company_id", "year"],
+    how="left"
+    )
+
+    cagr = cagr.merge(
+    eps,
+    on=["company_id", "year"],
+    how="left"
+    )
+    cagr = cagr[
+    [
+        "company_id",
+        "year",
+        "sales_3yr_cagr",
+        "sales_5yr_cagr",
+        "sales_10yr_cagr",
+        "net_profit_3yr_cagr",
+        "net_profit_5yr_cagr",
+        "net_profit_10yr_cagr",
+        "eps_3yr_cagr",
+        "eps_5yr_cagr",
+        "eps_10yr_cagr"
+    ]
+    ]
+
+
+    ###################################################
+    # STEP 3 - Cash Flow dataframe
+    ###################################################
+
+    cash = result[
+        [
+            "company_id",
+            "year",
+            "free_cash_flow_cr",
+            "capex_cr",
+            "cfo_quality_score",
+            "capex_intensity_pct",
+            "fcf_conversion_pct",
+            "capital_allocation_pattern"
+        ]
+    ]
+    financial_ratios = ratio_df.merge(
+    cagr,
+    on=["company_id", "year"],
+    how="left"
+    )
+
+    financial_ratios = financial_ratios.merge(
+    cash,
+    on=["company_id", "year"],
+    how="left"
+    )
+    financial_ratios.to_sql(
+    "financial_ratios",
+    conn,
+    if_exists="replace",
+    index=False
+    )
+
+    print("\nFinancial Ratios Table Created Successfully\n")
+    print(financial_ratios.head())
+
+    print("\nTotal Rows :", len(financial_ratios))
+    print("Total Companies :", financial_ratios["company_id"].nunique())
+    conn.close()
 
 
 if __name__ == "__main__":
