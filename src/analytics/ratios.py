@@ -1,5 +1,28 @@
 import pandas as pd
 import sqlite3
+import os
+BANK_NBFC = {
+    "AXISBANK",
+    "BAJFINANCE",
+    "BANKBARODA",
+    "CANBK",
+    "CHOLAFIN",
+    "HDFCBANK",
+    "HDFCLIFE",
+    "ICICIBANK",
+    "ICICIGI",
+    "ICICIPRULI",
+    "INDUSINDBK",
+    "IRFC",
+    "JIOFIN",
+    "KOTAKBANK",
+    "LICI",
+    "PFC",
+    "PNB",
+    "SBILIFE",
+    "SBIN",
+    "SHRIRAMFIN",
+}
 def calculate_npm(net_profit, sales):
     if sales == 0 or pd.isna(sales):
         return None
@@ -13,16 +36,32 @@ def calculate_roe(net_profit, equity_capital, reserves):
     if equity <= 0 or pd.isna(equity):
         return None
     return round((net_profit / equity) * 100, 2)
-def calculate_roce(operating_profit,depreciation,equity_capital,reserves,borrowings,):
+def calculate_roce(
+    company_id,
+    operating_profit,
+    depreciation,
+    equity_capital,
+    reserves,
+    borrowings,
+):
+    
+    if company_id in BANK_NBFC:
+        return None
+
     capital_employed = (
-        equity_capital + reserves + borrowings
+        equity_capital
+        + reserves
+        + borrowings
     )
+
     if capital_employed <= 0 or pd.isna(capital_employed):
         return None
+
     ebit = operating_profit - depreciation
+
     return round(
         (ebit / capital_employed) * 100,
-        2
+        2,
     )
 def calculate_debt_to_equity(
     borrowings,
@@ -78,6 +117,10 @@ def build_profitability_ratios():
         "SELECT * FROM balancesheet",
         conn
     )
+    companies = pd.read_sql(
+        "SELECT id,roce_percentage FROM companies",
+        conn,
+    )
     df = pd.merge(
         pl,
         bs,
@@ -108,13 +151,14 @@ def build_profitability_ratios():
     )
     df["return_on_capital_employed_pct"] = df.apply(
         lambda x: calculate_roce(
+            x["company_id"],
             x["operating_profit"],
             x["depreciation"],
             x["equity_capital"],
             x["reserves"],
-            x["borrowings"]
+            x["borrowings"],
         ),
-        axis=1
+        axis=1,
     )
     df["debt_to_equity"] = df.apply(
         lambda x: calculate_debt_to_equity(
@@ -176,6 +220,63 @@ def build_profitability_ratios():
             ]
         ].head()
     )
+    # ROCE Validation
+    comparison = df.merge(
+        companies,
+        left_on="company_id",
+        right_on="id",
+        how="left",
+    )
+
+    comparison["roce_difference"] = (
+        comparison["return_on_capital_employed_pct"]
+        - comparison["roce_percentage"]
+    ).abs()
+
+    comparison["remarks"] = ""
+
+    comparison.loc[
+        comparison["company_id"].isin(BANK_NBFC),
+        "remarks",
+    ] = "Bank/NBFC"
+
+    comparison.loc[
+        (comparison["roce_difference"] > 5)
+        & (~comparison["company_id"].isin(BANK_NBFC)),
+        "remarks",
+    ] = "Difference > 5%"
+
+    os.makedirs("reports", exist_ok=True)
+
+    comparison[
+        [
+            "company_id",
+            "year",
+            "return_on_capital_employed_pct",
+            "roce_percentage",
+            "roce_difference",
+            "remarks",
+        ]
+    ].to_csv(
+        "reports/sector_roce_notes.csv",
+        index=False,
+    )
+
+    print("\nROCE Validation Summary")
+
+    print(
+        comparison[
+            [
+                "company_id",
+                "year",
+                "return_on_capital_employed_pct",
+                "roce_percentage",
+                "roce_difference",
+                "remarks",
+            ]
+        ].head()
+    )
+    
 
     conn.close()
     return df
