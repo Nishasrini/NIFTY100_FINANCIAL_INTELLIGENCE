@@ -1,0 +1,130 @@
+===========================================================
+NIFTY100 FINANCIAL INTELLIGENCE
+Sprint 2 - Ratio Engine
+Ratio Edge Cases Log
+===========================================================
+
+
+
+-----------------------------------------------------------
+1. Net Profit Margin (NPM)
+-----------------------------------------------------------
+Condition:
+    Sales = 0 or Sales is NULL
+
+Action:
+    Return None
+
+Reason:
+    Division by zero is not allowed.
+
+-----------------------------------------------------------
+2. Operating Profit Margin (OPM)
+-----------------------------------------------------------
+Condition:
+    Sales = 0 or Sales is NULL
+
+Action:
+    Return None
+
+Reason:
+    Operating Profit Margin cannot be calculated.
+
+-----------------------------------------------------------
+3. Return on Equity (ROE)
+-----------------------------------------------------------
+Condition:
+    Equity (Equity Capital + Reserves) <= 0
+
+Action:
+    Return None
+
+Reason:
+    Negative or zero shareholder equity.
+
+-----------------------------------------------------------
+4. Return on Capital Employed (ROCE)
+-----------------------------------------------------------
+Condition:
+    Company belongs to Banking/NBFC sector
+
+Action:
+    Return None
+
+Reason:
+    ROCE is not applicable for Banking and NBFC companies.
+
+-----------------------------------------------------------
+5. Return on Capital Employed (ROCE)
+-----------------------------------------------------------
+Condition:
+    Capital Employed <= 0
+
+Action:
+    Return None
+
+Reason:
+    Invalid capital employed value.
+
+-----------------------------------------------------------
+6. Debt to Equity Ratio
+-----------------------------------------------------------
+Condition:
+    Equity <= 0
+
+Action:
+    Return None
+
+Reason:
+    Debt-to-Equity ratio cannot be computed.
+
+-----------------------------------------------------------
+7. Interest Coverage Ratio
+-----------------------------------------------------------
+Condition:
+    Interest = NULL
+
+Action:
+    Return None
+
+Reason:
+    Interest expense unavailable.
+
+-----------------------------------------------------------
+8. Interest Coverage Ratio
+-----------------------------------------------------------
+Condition:
+    Interest = 0
+
+Action:
+    Return 999
+
+Reason:
+    Company is treated as Debt Free.
+
+-----------------------------------------------------------
+9. Asset Turnover Ratio
+-----------------------------------------------------------
+Condition:
+    Total Assets = 0 or NULL
+
+Action:
+    Return None
+
+Reason:
+    Asset Turnover cannot be calculated.
+
+-----------------------------------------------------------
+Summary
+-----------------------------------------------------------
+Edge Cases Covered:
+✓ Division by Zero
+✓ Missing Values (NULL)
+✓ Negative Equity
+✓ Zero Capital Employed
+✓ Bank/NBFC ROCE Exclusion
+✓ Debt-Free Interest Coverage
+✓ Zero Total Assets
+
+Status:
+All edge cases validated successfully.
