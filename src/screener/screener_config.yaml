@@ -1,0 +1,22 @@
+quality:
+  min_roe: 15
+  max_debt_to_equity: 1
+  min_net_profit_margin: 10
+  min_operating_profit_margin: 15
+  min_sales_5yr_cagr: 10
+
+value:
+  max_pe: 20
+  max_pb: 3
+
+growth:
+  min_pat_5yr_cagr: 20
+
+dividend:
+  min_dividend_yield: 2
+
+momentum:
+  min_sales_5yr_cagr: 15
+
+debt_free:
+  max_borrowings: 0
