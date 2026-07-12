@@ -3,6 +3,8 @@ import pandas as pd
 import os
 import numpy as np
 import matplotlib.pyplot as plt
+from openpyxl.styles import Font, PatternFill
+from openpyxl.utils import get_column_letter
 DB_PATH = "data/nifty100.db"
 METRICS = [
     "net_profit_margin_pct",
@@ -162,6 +164,45 @@ def generate_radar_charts(peer_percentiles):
     print(
         f"\nGenerated {len(latest)} radar charts."
     )
+
+def export_peer_comparison(peer_percentiles):
+    os.makedirs("reports", exist_ok=True)
+    output_file = "reports/peer_comparison.xlsx"
+    with pd.ExcelWriter(
+        output_file,
+        engine="openpyxl"
+    ) as writer:
+        groups = peer_percentiles.groupby("peer_group_name")
+        for group_name, group in groups:
+            group = group.sort_values(
+                "year",
+                ascending=False,
+            )
+            sheet = group_name[:31]
+            group.to_excel(
+                writer,
+                sheet_name=sheet,
+                index=False,
+            )
+            ws = writer.sheets[sheet]
+            header_fill = PatternFill(
+                fill_type="solid",
+                start_color="4F81BD",
+            )
+            for cell in ws[1]:
+                cell.font = Font(bold=True)
+                cell.fill = header_fill
+            for column in ws.columns:
+                length = max(
+                    len(str(cell.value))
+                    if cell.value is not None else 0
+                    for cell in column
+                )
+                ws.column_dimensions[
+                    get_column_letter(column[0].column)
+                ].width = length + 2
+            ws.freeze_panes = "A2"
+    print(f"\nPeer comparison exported to {output_file}")
 def main():
 
     peer_groups, financial_ratios = load_data()
@@ -172,7 +213,8 @@ def main():
     save_to_db(peer_percentiles)
     print("\nPeer Percentiles Sample\n")
     print(peer_percentiles.head())
-    generate_radar_charts(peer_percentiles)
+    # generate_radar_charts(peer_percentiles)
+    export_peer_comparison(peer_percentiles)
 
 
 if __name__ == "__main__":
