@@ -30,6 +30,15 @@ def load_data():
         """,
         conn
     )
+    balance = balance[
+        balance["year"].str.startswith("Mar")]
+    sectors = pd.read_sql(
+        """
+        SELECT company_id, broad_sector
+        FROM sectors
+        """,
+        conn
+    )
     conn.close()
     ratios["merge_year"] = ratios["year"].str[-4:]
     balance["merge_year"] = balance["year"].str[-4:]
@@ -44,6 +53,11 @@ def load_data():
     df = df.merge(
         balance,
         on=["company_id", "merge_year"],
+        how="left"
+    )
+    df = df.merge(
+        sectors,
+        on="company_id",
         how="left"
     )
     df.drop(columns=["merge_year"], inplace=True)
@@ -87,6 +101,74 @@ def apply_filters(df, config, screener):
     else:
         print(f"{screener} screener cannot be executed because the required columns are not available.")
         return pd.DataFrame()
+def normalize(series):
+    series = series.fillna(series.median())
+    if series.max() == series.min():
+        return pd.Series(1.0, index=series.index)
+    return (series - series.min()) / (series.max() - series.min())
+
+def calculate_scores(df):
+    df["roe_score"] = normalize(df["return_on_equity_pct"])
+    df["roce_score"] = normalize(
+        df["return_on_capital_employed_pct"]
+    )
+    df["npm_score"] = normalize(
+        df["net_profit_margin_pct"]
+    )
+    df["profitability_score"] = (
+        df["roe_score"] +
+        df["roce_score"] +
+        df["npm_score"]
+    ) / 3
+    df["sales_score"] = normalize(
+        df["sales_5yr_cagr"]
+    )
+    df["profit_score"] = normalize(
+        df["net_profit_5yr_cagr"]
+    )
+    df["eps_score"] = normalize(
+        df["eps_5yr_cagr"]
+    )
+    df["growth_score"] = (
+        df["sales_score"] +
+        df["profit_score"] +
+        df["eps_score"]
+    ) / 3
+    df["pe_score"] = 1 - normalize(
+        df["pe_ratio"]
+    )
+    df["pb_score"] = 1 - normalize(
+        df["pb_ratio"]
+    )
+    df["valuation_score"] = (
+        df["pe_score"] +
+        df["pb_score"]
+    ) / 2
+    df["composite_score"] = (
+        0.50 * df["profitability_score"] +
+        0.30 * df["growth_score"] +
+        0.20 * df["valuation_score"]
+    )
+    return df
+
+def rank_companies(df):
+    df["overall_rank"] = (
+        df["composite_score"]
+        .rank(
+            ascending=False,
+            method="dense"
+        )
+        .astype(int)
+    )
+    df["sector_rank"] = (
+        df.groupby("broad_sector")["composite_score"]
+        .rank(
+            ascending=False,
+            method="dense"
+        )
+        .astype(int)
+    )
+    return df
 
 def main():
     config = load_config()
@@ -106,6 +188,27 @@ def main():
         result = apply_filters(df, config, screener)
         print(result)
         print(f"Companies Found: {len(result)}\n")
+    latest_year = (
+    df.groupby("company_id")["year"]
+      .max()
+      .reset_index()
+    )
+
+    df = df.merge(
+        latest_year,
+        on=["company_id", "year"]
+    )
+    ranked_df = calculate_scores(df)
+    conn = sqlite3.connect(DB_PATH)
+    ranked_df = rank_companies(ranked_df)
+    ranked_df = ranked_df.sort_values("overall_rank")
+    print(ranked_df.head(20))
+    ranked_df.to_excel(
+        "src/screener/screener_output.xlsx",
+        index=False
+    )
+    print("Output saved as screener_output.xlsx")
+
 
 if __name__ == "__main__":
     main()
