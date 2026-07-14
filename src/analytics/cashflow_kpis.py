@@ -1,8 +1,8 @@
 import sqlite3
 import pandas as pd
 import numpy as np
-from ratios import build_profitability_ratios
-from cagr import generate_all_cagr
+from src.analytics.ratios import build_profitability_ratios
+from src.analytics.cagr import generate_all_cagr
 DB_PATH = "data/nifty100.db"
 def capital_allocation_pattern(cfo, cfi, cff):
     if pd.isna(cfo) or pd.isna(cfi) or pd.isna(cff):
