@@ -27,4 +27,10 @@ ratios = pd.read_sql(
 st.subheader("Financial Ratios")
 
 st.dataframe(ratios)
+st.dataframe(
+    pd.read_sql(
+        "SELECT DISTINCT year FROM financial_ratios ORDER BY year;",
+        conn
+    )
+)
 conn.close()
